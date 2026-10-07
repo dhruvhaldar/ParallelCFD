@@ -1,0 +1,16 @@
+.venv/
+build/
+*.so
+*.o
+*.a
+*.dSYM/
+__pycache__/
+*.pyc
+.pytest_cache/
+results/*.csv
+results/*.json
+data/*.vtk
+data/*.vti
+data/*.vtu
+data/*.npy
+data/*.npz

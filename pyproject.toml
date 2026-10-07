@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0", "pybind11>=2.10"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "parallelcfd"
+version = "1.0.0"
+description = "OpenMP-Accelerated CFD Field Analysis and Post-Processing Toolkit"
+authors = [{ name = "Dhruv Haldar" }]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.20",
+    "pyvista>=0.38",
+    "matplotlib>=3.5",
+]
