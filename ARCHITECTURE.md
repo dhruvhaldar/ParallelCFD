@@ -327,3 +327,9 @@ flowchart LR
 
 1. **Zero-Copy Access:** `py::array_t<double>::request()` extracts the raw memory pointer (`ptr`), dimensions, and strides directly from the NumPy array without copying data.
 2. **GIL Release:** Wrapping C++ compute loops in `py::gil_scoped_release` frees the Python interpreter lock. OpenMP worker threads execute with 100% CPU utilization across all cores without thread contention from Python's garbage collector.
+
+---
+
+## 7. Further Reading for Python Engineers
+
+For senior Python developers seeking an in-depth breakdown comparing CPython internals, the GIL, NumPy expression evaluation, and hardware memory mechanics to C++ and OpenMP, refer to [**`PYTHON_HPC_GUIDE.md`**](PYTHON_HPC_GUIDE.md).

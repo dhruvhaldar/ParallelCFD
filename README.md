@@ -14,9 +14,10 @@ It bridges distributed-memory **MPI** computing with shared-memory **OpenMP** mu
 
 ### 📚 In-Depth Technical Reports & Dossiers
 - [📄 **Comprehensive PDF Technical Guide (`ParallelCFD_Comprehensive_Guide.pdf`)**](ParallelCFD_Comprehensive_Guide.pdf): Full publication-quality report compiled with diagrams, benchmark tables, mathematical derivations, and the complete HPC interview Q&A.
-- [**System Architecture & Technical Design (`ARCHITECTURE.md`)**](ARCHITECTURE.md): Detailed software architecture, memory hierarchies, stencil discretization schemes, and zero-copy Python binding design.
-- [**Performance Analysis & Roofline Report (`PERFORMANCE_REPORT.md`)**](PERFORMANCE_REPORT.md): In-depth scaling studies, memory bandwidth saturation analysis, false sharing cache mechanics, and Amdahl's Law derivations.
-- [**HPC Technical Interview Dossier (`HPC_INTERVIEW_GUIDE.md`)**](HPC_INTERVIEW_GUIDE.md): 10 core technical interview questions with deep architectural answers tailored for HPC, CFD, and scientific software developer interviews.
+- [🐍 **HPC Guide for Senior Python Engineers (`PYTHON_HPC_GUIDE.md`)**](PYTHON_HPC_GUIDE.md): Practical primer translating CPython, GIL release, zero-copy NumPy buffers, SIMD vectorization, and cache line mechanics for Python developers.
+- [🏛️ **System Architecture & Technical Design (`ARCHITECTURE.md`)**](ARCHITECTURE.md): Detailed software architecture, memory hierarchies, stencil discretization schemes, and zero-copy Python binding design.
+- [📊 **Performance Analysis & Roofline Report (`PERFORMANCE_REPORT.md`)**](PERFORMANCE_REPORT.md): In-depth scaling studies, memory bandwidth saturation analysis, false sharing cache mechanics, and Amdahl's Law derivations.
+- [🎯 **HPC Technical Interview Dossier (`HPC_INTERVIEW_GUIDE.md`)**](HPC_INTERVIEW_GUIDE.md): 10 core technical interview questions with deep architectural answers tailored for HPC, CFD, and scientific software developer interviews.
 
 ---
 
@@ -91,6 +92,43 @@ Orthogonal slice planes showing vorticity magnitude $|\boldsymbol{\omega}| = \|\
   <img src="results/false_sharing_analysis.png" width="48%" alt="False Sharing Analysis">
   <img src="results/race_condition_comparison.png" width="48%" alt="Synchronization Overhead">
 </p>
+
+---
+
+## 🐍 Primer for Senior Python Engineers: Bridging Python to HPC & OpenMP
+
+If you have a strong background in Python/CPython, you already understand memory references, the GIL, NumPy array layouts, and tools like `multiprocessing`. Here is how high-performance computing (HPC) translates to your mental model:
+
+### The Python vs. HPC Translation Matrix
+
+| Python / CPython Concept | Low-Level HPC / C++20 Equivalent | Why It Matters at Scale |
+| :--- | :--- | :--- |
+| **GIL (Global Interpreter Lock)** | Thread-safe hardware execution via **`py::gil_scoped_release`** | Python `threading` cannot run CPU-bound loops across multiple cores. OpenMP spawns true OS kernel threads that run directly on bare metal once the GIL is dropped. |
+| **NumPy Array (`ndarray`)** | Contiguous raw pointer: `double*` with custom strides | NumPy arrays are already C-compatible buffers. With `pybind11` buffer protocols, C++ functions read/write NumPy memory with **zero serialization, zero copies, and 0 ns overhead**. |
+| **Vectorized Expressions** (`np.sqrt(u**2 + v**2 + w**2)`) | **Fused SIMD Kernels** (`#pragma omp parallel for simd`) | NumPy evaluates expressions step-by-step, allocating multiple temporary arrays in RAM. C++ computes the entire formula in a single CPU instruction pass inside vector registers. |
+| **Dataclasses & Dicts (`class Cell`)** | **Structure-of-Arrays (SoA)** vs. **Array-of-Structures (AoS)** | Python objects are scattered across heap memory. In C++, memory layout dictates whether hardware CPU vector units (AVX2/AVX-512) can load 4 or 8 numbers simultaneously. |
+| **Threading Race Conditions** | **False Sharing** (`MESI` Cache Coherence Protocol) | Even if two threads write to completely independent variables, if those variables share the same 64-byte L1 cache line, CPU hardware stalls. Solved with `alignas(64)`. |
+| **`multiprocessing.Pool`** | **MPI (Message Passing Interface)** Domain Decomposition | `multiprocessing` pickles objects through IPC pipes/sockets. MPI exchanges raw binary memory slices across cluster nodes over high-speed networks (InfiniBand/DMA). |
+
+### Zero-Copy Python API Example
+You write clean, readable Python code, while the heavy computing is offloaded to C++ OpenMP kernels without copying memory:
+
+```python
+from parallelcfd import TaylorGreenVortex, CFDVisualizer
+
+# 1. Initialize analytical 3D Taylor-Green vortex (128^3 = 2.097M cells)
+grid = TaylorGreenVortex(nx=128, ny=128, nz=128, num_threads=16)
+
+# 2. Compute 3D Q-criterion tensor field
+# Behind the scenes: pybind11 drops GIL, 16 OpenMP threads run on bare metal, 0 copies!
+q_crit = grid.compute_q_criterion()
+
+# 3. Seamless 3D PyVista visualization
+vis = CFDVisualizer(grid)
+vis.render_q_criterion_iso(iso_val=0.1, color_by="velocity_magnitude")
+```
+
+👉 *For the full architectural deep dive on CPython internals vs bare-metal hardware, see [**`PYTHON_HPC_GUIDE.md`**](PYTHON_HPC_GUIDE.md).*
 
 ---
 
